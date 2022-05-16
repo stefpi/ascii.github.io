@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+        body {
+            background-color: black;
+        }
+        div {
+            color: white;
+            font-variant-numeric: tabular-nums;
+            font-family: monospace;
+        }
+        #ascii {
+            white-space: initial;
+            word-wrap: break-word;
+            font-size: 5px;
+        }
+        .row {
+            text-align: center;
+        }
+        .block {
+            margin:0px;
+            display: inline-block;
+        }
+    </style>
+    </head>
+    <body>
+        <div class="row">
+            <video autoplay id="videoElement"></video>
+            <div class="block" id="ascii"></div>
+        </div>
+        <canvas class="block" id="canvas" height="0" width="0"></canvas>
+    </body>
+    <script>
+        function map(x, a, b, c, d) {
+            return (x-a)/(b-a)*(d-c)+c;
+        }
+
+        var c = document.getElementById("canvas");
+        var ctx = c.getContext("2d");
+        const video = document.querySelector("#videoElement");
+        let width, height;
+
+        const density = '    .:-i|=+%O#@'
+
+        if (navigator.mediaDevices.getUserMedia) {
+            navigator.mediaDevices.getUserMedia({ video: true })
+            .then(function (stream) {
+                console.log(stream.getTracks()[0].getSettings())
+                width = stream.getTracks()[0].getSettings().width;
+                height = stream.getTracks()[0].getSettings().height;
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch(function (err0r) {});
+        }
+
+        const FPS = 20;
+        setInterval(() => {
+            let scale = 0.2;
+            const imgWidth = width * scale;
+            const imgHeight = height * scale;
+                c.width = imgWidth;
+                c.height = imgHeight;
+            let asciiImage = "";
+            ctx.drawImage(video, 0, 0, imgWidth, imgHeight);
+            var imgData = ctx.getImageData(0, 0, imgWidth, imgHeight);
+            console.log(imgData.data.length);
+            for (var i=0;i<imgData.data.length;i+=4){
+                const r = imgData.data[i];
+                const g = imgData.data[i+1];
+                const b = imgData.data[i+2];
+                const a = imgData.data[i+3];
+                let avg = 0.2989 * r + 0.5870 * g + 0.1140 * b;
+                const len = density.length;
+                const charIndex = Math.floor(map(avg, 0, 255, 0, len));
+                const c = density.charAt(charIndex);
+                if (c == " ") asciiImage += "&nbsp;&nbsp;";
+                else asciiImage += c + "&nbsp;";
+                if (i != 0 && i % (imgWidth*4) == 0) {
+                    asciiImage += "<br\>";
+                }
+            }
+            document.getElementById("ascii").innerHTML = asciiImage;
+            ctx.clearRect(0, 0, imgWidth, imgHeight);
+        }, 1000/FPS);
+</script>
+</html>
